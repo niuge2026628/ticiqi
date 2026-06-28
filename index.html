@@ -328,7 +328,7 @@ function sR(){
   rec.onresult=function(){lastSp=Date.now();if(!S.paused)sSC()};
   rec.onerror=function(ev){if(ev.error==='not-allowed'){uM('err');t('⚠️ 请允许麦克风权限');return}uM('on')};
   rec.onend=function(){if(S.page==='tp'&&rec){setTimeout(function(){if(S.page==='tp'&&rec){try{rec.start()}catch(e){}}},300)}};
-  try{rec.start();uM('on');sSC()}catch(e){uM('err')}
+  try{rec.start();lastSp=Date.now();uM('on');sSC()}catch(e){uM('err')}
 }
 
 function eR(){clearTimeout(sTimer);sTimer=null;if(rec){try{rec.onend=null;rec.stop()}catch(e){};rec=null}uM('off')}
