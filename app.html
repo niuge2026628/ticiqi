@@ -1,0 +1,367 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#0a0a14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<title>语音提词器</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;background:#0a0a14;color:#e8e8e8}
+button,input,textarea{font-family:inherit;outline:none;border:none;-webkit-appearance:none;appearance:none}
+button{font-size:inherit;background:none;cursor:pointer}
+textarea{-webkit-user-select:text;user-select:text}
+#app{width:100%;height:100%;position:relative;overflow:hidden}
+.page{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .35s,opacity .35s}
+.page.hidden{transform:translateX(30px);opacity:0;pointer-events:none}
+
+/* ═══ 首页 ═══ */
+#home-page{background:#0d0d1a;padding:env(safe-area-inset-top,12px) 14px env(safe-area-inset-bottom,12px) 14px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px;flex-shrink:0}
+.header h1{font-size:24px;font-weight:700;color:#fff}
+.header .badge{font-size:11px;color:#4ade80;background:rgba(74,222,128,.12);padding:3px 8px;border-radius:10px}
+
+.slist{flex:1;overflow-y:auto;margin-bottom:10px;-webkit-overflow-scrolling:touch;min-height:0}
+.slist::-webkit-scrollbar{display:none}
+
+.sitem{background:#16162a;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border:2px solid transparent}
+.sitem:active{background:#1e1e38}
+.sitem.active{border-color:#4ade80;background:#1a1a35}
+.sitem .info{flex:1;min-width:0}
+.sitem .title{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sitem .meta{font-size:11px;color:#777;margin-top:2px}
+.sitem .acts{display:flex;gap:8px;flex-shrink:0}
+.sitem .acts button{width:34px;height:34px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center}
+.sitem .acts .del{color:#e74c3c}
+.sitem .acts .del:active{background:rgba(231,76,60,.15)}
+.sitem .acts .play{color:#4ade80;font-size:18px}
+.sitem .acts .play:active{background:rgba(74,222,128,.15)}
+
+.editor{flex-shrink:0;background:#12122a;border-radius:14px;padding:12px;border:2px solid #2a2a4a}
+.editor label{font-size:13px;color:#999;display:block;margin-bottom:5px}
+.editor input[type=text]{width:100%;background:#0a0a18;border-radius:8px;padding:11px 12px;font-size:15px;color:#fff;border:2px solid #333355;margin-bottom:8px}
+.editor input[type=text]:focus{border-color:#4ade80;background:#0d0d20}
+.editor textarea{width:100%;background:#0a0a18;border-radius:8px;padding:11px 12px;font-size:15px;color:#fff;border:2px solid #333355;resize:vertical;min-height:110px;max-height:220px;line-height:1.6}
+.editor textarea:focus{border-color:#4ade80;background:#0d0d20}
+.editor .btns{display:flex;gap:10px;margin-top:10px}
+.editor .btns button{flex:1;padding:13px;border-radius:10px;font-size:16px;font-weight:600}
+.btn-save{background:#4ade80;color:#0a0a14}
+.btn-save:active{opacity:.85}
+.btn-start{background:#252545;color:#4ade80}
+.btn-start:active{background:#333355}
+
+.empty{text-align:center;padding:30px 16px;color:#666}
+.empty .icon{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px;line-height:1.6}
+
+/* ═══ 提词器 ═══ */
+#tp-page{background:#000;flex-direction:column;align-items:center;justify-content:center}
+#tp-page.light{background:#fff}
+.tp-top{position:absolute;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,6px) 10px 6px;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent)}
+.light .tp-top{background:linear-gradient(to bottom,rgba(255,255,255,.7),transparent)}
+.tp-top button{width:42px;height:42px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85)}
+.light .tp-top button{color:rgba(0,0,0,.55)}
+.tp-top button:active{background:rgba(255,255,255,.15)}
+.light .tp-top button:active{background:rgba(0,0,0,.08)}
+
+.mic{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:16px;background:rgba(0,0,0,.45);color:#4ade80;font-size:12px;font-weight:500}
+.light .mic{background:rgba(0,0,0,.05);color:#16a34a}
+.mic-dot{width:8px;height:8px;border-radius:50%;background:#4ade80}
+.mic-dot.on{animation:breathe 1.6s ease-in-out infinite}
+.mic-dot.talk{background:#ef4444;animation:none;box-shadow:0 0 6px #ef4444}
+.mic-dot.off{background:#666;animation:none}
+@keyframes breathe{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
+
+.tp-text-wrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:55px 20px 75px;overflow:hidden}
+.tp-text{text-align:center;line-height:1.5;font-weight:600;color:#fff;word-break:keep-all;overflow-wrap:break-word}
+.light .tp-text{color:#111}
+.tp-text.in{animation:fadeIn .4s ease-out}.click-hint{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.35);font-size:13px;pointer-events:none;transition:opacity .5s}.click-hint.gone{opacity:0}.mic-guide{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:25;background:rgba(20,20,40,.95);border:2px solid #4ade80;border-radius:14px;padding:20px;text-align:center;color:#fff;font-size:14px;max-width:280px}.mic-guide p{margin:4px 0}.mg-sub{font-size:11px!important;color:#888!important}.mg-btn{margin:8px;padding:10px 20px;background:#4ade80;color:#000;border-radius:8px;font-size:14px;font-weight:600}.mg-hint{font-size:10px!important;color:#666!important;margin-top:4px!important}
+@keyframes fadeIn{from{opacity:.3;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.tp-bar{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:6px 14px;padding-bottom:max(6px,env(safe-area-inset-bottom,6px));background:linear-gradient(to top,rgba(0,0,0,.6),transparent);display:flex;align-items:center;gap:8px}
+.light .tp-bar{background:linear-gradient(to top,rgba(0,0,0,.08),transparent)}
+.tp-bar .track{flex:1;height:3px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden}
+.light .tp-bar .track{background:rgba(0,0,0,.15)}
+.tp-bar .fill{height:100%;background:#4ade80;border-radius:2px;transition:width .4s}
+.tp-bar .label{font-size:11px;color:rgba(255,255,255,.65);font-weight:500;white-space:nowrap;min-width:34px;text-align:right}
+.light .tp-bar .label{color:rgba(0,0,0,.5)}
+
+.mirror-btn{position:absolute;bottom:52px;right:14px;z-index:20;width:46px;height:46px;border-radius:50%;background:rgba(30,30,58,.85);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.12)}
+.mirror-btn:active{transform:scale(.92)}
+.mirror-btn.on{background:rgba(74,222,128,.85);box-shadow:0 3px 14px rgba(74,222,128,.3)}
+
+.mirror-wrap{width:100%;height:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mirror-wrap.flip{transform:scaleX(-1)}
+
+.fctl{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:20;opacity:0;pointer-events:none;transition:opacity .3s}
+.fctl.show{opacity:1;pointer-events:auto}
+.fctl button{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.light .fctl button{background:rgba(0,0,0,.08);color:#333}
+.fctl button:active{background:rgba(74,222,128,.3)}
+
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:30;background:rgba(0,0,0,.88);color:#fff;padding:9px 18px;border-radius:16px;font-size:13px;font-weight:500;pointer-events:none;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+
+.pause{position:absolute;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .3s}
+.light .pause{background:rgba(255,255,255,.5)}
+.pause.show{opacity:1;background:rgba(0,0,0,.65)}
+.pause .icon{font-size:56px;color:#fff;animation:pulse 1.5s ease-in-out infinite}
+.light .pause .icon{color:#333}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.15);opacity:1}}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ 首页 ═══ -->
+<div id="home-page" class="page">
+  <div class="header"><h1>🎬 语音提词器</h1><span class="badge">v1.3</span></div>
+  <div class="slist" id="scriptList">
+    <div class="empty"><div class="icon">📝</div><p>还没有保存台词<br>在下方粘贴你的第一份台词吧</p></div>
+  </div>
+  <div class="editor">
+    <label>台词标题</label>
+    <input type="text" id="scriptTitle" placeholder="给这段台词起个名字…" maxlength="50">
+    <label>台词内容（空行自然分段）</label>
+    <textarea id="scriptContent" placeholder="在此粘贴台词内容…
+
+用空行分隔不同段落
+每段在提词时单独显示"></textarea>
+    <div class="btns">
+      <button class="btn-save" id="btnSave" onclick="saveScript()">💾 保存</button>
+      <button class="btn-start" id="btnStartMain" onclick="startWithCurrent()">▶ 直接开始</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 提词器 ═══ -->
+<div id="tp-page" class="page hidden">
+  <div class="mirror-wrap" id="mirrorWrap">
+    <div class="tp-top">
+      <button onclick="goHome()" title="返回">✕</button>
+      <div class="mic" id="micBox"><div class="mic-dot off" id="micDot"></div><span id="micLabel">未启动</span></div>
+      <button onclick="toggleFctl()" title="字号">⚙</button>
+    </div>
+    <div class="tp-text-wrap" id="tpTextWrap" onclick="togglePause()">
+      <div class="tp-text" id="tpText"></div>
+      <div class="click-hint" id="clickHint">👆 点击暂停/继续</div>
+    </div>
+    <div class="mic-guide" id="micGuide" style="display:block"><div class="mg-inner"><p>🎤 语音识别需要 HTTP 方式打开</p><p class="mg-sub">file:// 不支持语音API，请用本地服务器</p><button onclick="retryMic()" class="mg-btn">🔊 重新请求麦克风</button><p class="mg-hint">手动：点击暂停 · 左滑下一段 · 右滑上一段</p></div></div>
+    <div class="tp-bar">
+      <div class="track"><div class="fill" id="barFill"></div></div>
+      <span class="label" id="barLabel">0/0</span>
+    </div>
+    <div class="fctl" id="fctl">
+      <button onclick="changeFS(2)" title="放大">+</button>
+      <button onclick="changeFS(-2)" title="缩小">−</button>
+    </div>
+    <div class="pause" id="pauseOverlay"><span class="icon">⏸</span></div>
+    <button class="mirror-btn" id="mirrorBtn" onclick="toggleMirror()" title="镜像切换">🔄</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ═══════════════════ 全局函数 ─ onclick 直接调用 ═══════════════════
+var D=document,W=window,L=W.localStorage;
+var ST='tps_v5',SK='tps_s5';
+var SIL=1500,FMN=18,FMX=60;
+var SR=W.SpeechRecognition||W.webkitSpeechRecognition;
+var rec=null,sTimer=null,lastSp=0,wl=null;
+
+var S={scripts:[],curId:null,idx:0,paused:false,mirror:false,theme:'dark',fs:30,fv:false,page:'home'};
+
+function g(id){return D.getElementById(id)}
+var hPage=g('home-page'),tPage=g('tp-page'),mWrap=g('mirrorWrap');
+var tText=g('tpText'),tWrap=g('tpTextWrap');
+var bFill=g('barFill'),bLabel=g('barLabel');
+var mDot=g('micDot'),mLabel=g('micLabel');
+var pOver=g('pauseOverlay'),mBtn=g('mirrorBtn'),fctl=g('fctl');
+var sList=g('scriptList'),sT=g('scriptTitle'),sC=g('scriptContent');
+var toast=g('toast');
+
+// ── 持久化 ──
+function ld(){
+  try{var r=L.getItem(SK);if(r)S.scripts=JSON.parse(r);if(!Array.isArray(S.scripts))S.scripts=[]}catch(e){}
+  try{r=L.getItem(ST);if(r){var s=JSON.parse(r);if(s&&typeof s==='object'){if(Array.isArray(s.scripts))S.scripts=s.scripts;if(typeof s.curId==='string')S.curId=s.curId;if(typeof s.idx==='number')S.idx=s.idx;if(typeof s.mirror==='boolean')S.mirror=s.mirror;if(s.theme==='dark'||s.theme==='light')S.theme=s.theme;if(typeof s.fs==='number')S.fs=s.fs}}}catch(e){}
+  if(S.fs<FMN)S.fs=FMN;if(S.fs>FMX)S.fs=FMX
+}
+function sv(){
+  try{L.setItem(ST,JSON.stringify({scripts:S.scripts,curId:S.curId,idx:S.idx,mirror:S.mirror,theme:S.theme,fs:S.fs}));L.setItem(SK,JSON.stringify(S.scripts))}catch(e){t('⚠️ 存储失败')}
+}
+
+// ── Toast ──
+var tt=null;
+function t(m,d){if(!toast)return;if(d===undefined)d=1800;toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},d)}
+
+// ── 段落 ──
+function ps(txt){if(!txt||!txt.trim)return[];var x=txt.trim();if(!x)return[];return x.split(/\n\s*\n/).map(function(p){return p.trim()}).filter(function(p){return p.length>0})}
+
+// ── 工具 ──
+function esc(s){var d=D.createElement('div');d.textContent=s||'';return d.innerHTML}
+function p2(n){return n<10?'0'+n:''+n}
+function fdt(ts){var d=new Date(ts),n=new Date(),df=n-d;if(df<6e4)return'刚刚';if(df<36e5)return Math.floor(df/6e4)+'分钟前';if(df<864e5)return Math.floor(df/36e5)+'小时前';return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function fi(id){for(var i=0;i<S.scripts.length;i++){if(S.scripts[i].id===id)return S.scripts[i]}return null}
+
+// ── 渲染列表 ──
+function rl(){
+  if(!sList)return;
+  if(!S.scripts.length){sList.innerHTML='<div class="empty"><div class="icon">📝</div><p>还没有保存台词<br>在下方粘贴你的第一份台词吧</p></div>';return}
+  var h='';
+  for(var i=0;i<S.scripts.length;i++){
+    var s=S.scripts[i],cls=s.id===S.curId?' active':'';
+    h+='<div class="sitem'+cls+'" onclick="selScr(\''+s.id+'\')"><div class="info"><div class="title">'+esc(s.title||'未命名')+'</div><div class="meta">'+ps(s.content).length+' 段 · '+fdt(s.updatedAt)+'</div></div><div class="acts"><button class="del" onclick="event.stopPropagation();delScr(\''+s.id+'\')" title="删除">🗑</button><button class="play" onclick="event.stopPropagation();goScr(\''+s.id+'\')" title="开始提词">▶</button></div></div>'
+  }
+  sList.innerHTML=h
+}
+
+function selScr(id){S.curId=id;var s=fi(id);if(s&&sT&&sC){sT.value=s.title;sC.value=s.content}rl();sv()}
+
+// ═══ onclick 全局函数 ═══
+function saveScript(){
+  if(!sC)return;
+  var title=(sT&&sT.value.trim())||'未命名';
+  var content=sC.value;
+  if(!content.trim()){t('请先输入台词内容');return}
+  var ex=fi(S.curId);
+  if(ex){ex.title=title;ex.content=content;ex.updatedAt=Date.now();t('✅ 已更新')}
+  else{var id='s_'+Date.now();S.scripts.push({id:id,title:title,content:content,createdAt:Date.now(),updatedAt:Date.now()});S.curId=id;t('✅ 已保存')}
+  sv();rl()
+}
+
+function delScr(id){
+  if(!confirm('确定删除这段台词吗？'))return;
+  S.scripts=S.scripts.filter(function(x){return x.id!==id});
+  if(S.curId===id)S.curId=null;
+  sv();rl();
+  if(sT)sT.value='';if(sC)sC.value=''
+}
+
+function goScr(id){
+  var s=fi(id);if(!s){t('台词不存在');return}
+  S.curId=id;S.idx=0;S.paused=false;sv();
+  enterTP(s)
+}
+
+function startWithCurrent(){
+  if(!sC)return;
+  var c=sC.value;
+  if(!c.trim()){t('请先输入台词内容');return}
+  var title=(sT&&sT.value.trim())||'临时台词';
+  var ex=fi(S.curId);
+  if(!ex){var id='s_'+Date.now();S.scripts.push({id:id,title:title,content:c,createdAt:Date.now(),updatedAt:Date.now()});S.curId=id}
+  else if(ex.content!==c||ex.title!==title){ex.title=title;ex.content=c;ex.updatedAt=Date.now()}
+  sv();S.idx=0;S.paused=false;sv();
+  var s=fi(S.curId);
+  if(s)enterTP(s);else t('保存失败，请重试')
+}
+
+function enterTP(sc){
+  if(!sc){t('台词数据错误');return}
+  var ps1=ps(sc.content);
+  if(!ps1.length){t('台词内容为空');return}
+  S.page='tp';
+  at();am();
+  if(tText)tText.style.fontSize=S.fs+'px';
+  sp(ps1,S.idx);
+  if(hPage)hPage.classList.add('hidden');
+  if(tPage)tPage.classList.remove('hidden');
+  if(pOver){pOver.classList.remove('show');if(S.paused)pOver.classList.add('show')}
+  tPage._ps=ps1;tPage._sid=sc.id;
+  sR();rW();rl()
+}
+
+function goHome(){
+  S.page='home';eR();rWl();
+  if(tPage)tPage.classList.add('hidden');
+  if(hPage)hPage.classList.remove('hidden');
+  sv();rl()
+}
+
+function sp(ps1,i){
+  if(i<0)i=0;if(i>=ps1.length)i=ps1.length-1;
+  S.idx=i;
+  if(tText){tText.textContent=ps1[i];tText.classList.remove('in');void tText.offsetWidth;tText.classList.add('in')}
+  if(bFill){var pct=ps1.length>1?(i/(ps1.length-1))*100:100;bFill.style.width=pct+'%'}
+  if(bLabel)bLabel.textContent=(i+1)+'/'+ps1.length;
+  sv()
+}
+
+function nx(){if(S.paused||S.page!=='tp'||!tPage||!tPage._ps)return;var n=S.idx+1;if(n<tPage._ps.length)sp(tPage._ps,n)}
+function pv(){if(S.page!=='tp'||!tPage||!tPage._ps)return;var p=S.idx-1;if(p>=0)sp(tPage._ps,p)}
+
+// ── 主题 ──
+function at(){if(!tPage)return;if(S.theme==='light')tPage.classList.add('light');else tPage.classList.remove('light')}
+function ttgl(){S.theme=S.theme==='dark'?'light':'dark';at();sv();t(S.theme==='dark'?'🌙 黑底白字':'☀️ 白底黑字')}
+
+// ── 镜像 ──
+function am(){if(!mWrap||!mBtn)return;if(S.mirror){mWrap.classList.add('flip');mBtn.classList.add('on');mBtn.textContent='🔃'}else{mWrap.classList.remove('flip');mBtn.classList.remove('on');mBtn.textContent='🔄'}}
+function toggleMirror(){S.mirror=!S.mirror;am();sv();t(S.mirror?'🔃 镜像 — 配合反射镜使用':'🔄 正常显示')}
+
+// ── 字号 ──
+function changeFS(d){S.fs+=d;if(S.fs<FMN)S.fs=FMN;if(S.fs>FMX)S.fs=FMX;if(tText)tText.style.fontSize=S.fs+'px';sv();t('字号: '+S.fs+'px',1e3)}
+function toggleFctl(){if(!fctl)return;S.fv=!S.fv;if(S.fv)fctl.classList.add('show');else fctl.classList.remove('show')}
+
+// ── 暂停 ──
+function togglePause(){S.paused=!S.paused;if(S.paused){if(pOver)pOver.classList.add('show');clearTimeout(sTimer)}else{if(pOver)pOver.classList.remove('show');lastSp=Date.now();sSC()}sv()}
+
+// ── 语音识别 ──
+function sR(){
+  if(!SR){uM('unsup');t('⚠️ 浏览器不支持语音识别');return}
+  eR();
+  try{rec=new SR()}catch(e){uM('err');return}
+  rec.continuous=true;rec.interimResults=true;rec.lang='zh-CN';
+  rec.onspeechstart=function(){lastSp=Date.now();clearTimeout(sTimer);uM('talk')};
+  rec.onspeechend=function(){lastSp=Date.now();uM('on');if(!S.paused)sSC()};
+  rec.onresult=function(){lastSp=Date.now();if(!S.paused)sSC()};
+  rec.onerror=function(ev){if(ev.error==='not-allowed'){uM('err');t('⚠️ 请允许麦克风权限');return}uM('on')};
+  rec.onend=function(){if(S.page==='tp'&&rec){setTimeout(function(){if(S.page==='tp'&&rec){try{rec.start()}catch(e){}}},300)}};
+  try{rec.start();uM('on');sSC()}catch(e){uM('err')}
+}
+
+function eR(){clearTimeout(sTimer);sTimer=null;if(rec){try{rec.onend=null;rec.stop()}catch(e){};rec=null}uM('off')}
+function sSC(){clearTimeout(sTimer);sTimer=setTimeout(scL,SIL)}
+function scL(){if(S.paused||S.page!=='tp')return;if(Date.now()-lastSp>=SIL){nx();lastSp=Date.now()}if(!S.paused&&S.page==='tp'){clearTimeout(sTimer);sTimer=setTimeout(scL,400)}}
+
+function retryMic(){var g=document.getElementById("micGuide");if(g)g.style.display="none";sR()}function uM(st){
+  if(!mDot||!mLabel)return;mDot.className='mic-dot';mLabel.style.color='';
+  switch(st){
+    case'on':mDot.classList.add('on');mLabel.textContent='监听中';var g3=document.getElementById('micGuide');if(g3)g3.style.display='none';break;
+    case'talk':mDot.classList.add('talk');mLabel.textContent='朗读中';mLabel.style.color='#ef4444';var g4=document.getElementById('micGuide');if(g4)g4.style.display='none';break;
+    case'off':mDot.classList.add('off');mLabel.textContent='未启动';break;
+    case'unsup':mDot.classList.add('off');mLabel.textContent='不支持语音';mLabel.style.color='#ff9800';break;
+    case'err':mDot.classList.add('off');mLabel.textContent='权限不足';mLabel.style.color='#ef4444';var g2=document.getElementById('micGuide');if(g2)g2.style.display='block';break
+  }
+}
+
+// ── 屏幕常亮 ──
+function rW(){if(navigator.wakeLock&&S.page==='tp'){navigator.wakeLock.request('screen').then(function(lk){wl=lk;wl.addEventListener('release',function(){wl=null})}).catch(function(){})}}
+function rWl(){if(wl){wl.release().catch(function(){});wl=null}}
+D.addEventListener('visibilitychange',function(){if(D.visibilityState==='visible'&&S.page==='tp'){rW();if(!rec)sR()}});
+
+// ── 滑动翻页 ──
+var _x=0,_y=0;
+if(tWrap){tWrap.addEventListener('touchstart',function(e){_x=e.touches[0].clientX;_y=e.touches[0].clientY},{passive:true});tWrap.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-_x,dy=e.changedTouches[0].clientY-_y;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){if(dx<-30)nx();else if(dx>30)pv()}if(Math.abs(dy)>Math.abs(dx)&&dy<-50)ttgl()})}
+
+// ── 键盘快捷键 ──
+D.addEventListener('keydown',function(e){if(S.page!=='tp')return;switch(e.key){case' ':e.preventDefault();togglePause();break;case'ArrowRight':e.preventDefault();nx();break;case'ArrowLeft':e.preventDefault();pv();break;case't':if(!e.ctrlKey&&!e.metaKey){e.preventDefault();ttgl()}break;case'm':if(!e.ctrlKey&&!e.metaKey){e.preventDefault();toggleMirror()}break}});
+
+// ── 启动 ──
+ld();at();am();if(tText)tText.style.fontSize=S.fs+'px';rl();
+if(S.curId){var _s=fi(S.curId);if(_s&&sT&&sC){sT.value=_s.title;sC.value=_s.content}}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
+</script>
+</body>
+</html>

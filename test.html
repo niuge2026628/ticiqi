@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>提词器测试</title>
+<style>
+body{font-family:sans-serif;padding:20px;background:#111;color:#eee}
+button{padding:16px 32px;font-size:18px;margin:10px;border-radius:12px;border:none}
+.btn1{background:#4ade80;color:#000}
+.btn2{background:#333;color:#4ade80}
+</style>
+</head>
+<body>
+<h2>🎬 语音提词器</h2>
+<p id="status">等待操作…</p>
+<button class="btn1" onclick="doSave()">💾 保存</button>
+<button class="btn2" onclick="doStart()">▶ 直接开始</button>
+
+<script>
+// 最简单测试 —— 如果这都不行，说明 Mate30 浏览器禁用了JS
+document.getElementById('status').textContent = '✅ JS已运行';
+
+function doSave(){
+  document.getElementById('status').textContent = '保存按钮被点击了！';
+}
+function doStart(){
+  document.getElementById('status').textContent = '直接开始按钮被点击了！';
+}
+</script>
+</body>
+</html>
